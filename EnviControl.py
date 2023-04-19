@@ -91,16 +91,19 @@ if __name__ == "__main__":
         df_inspection.to_excel(writer,index=False,sheet_name='inspection')
         df_inspection_foreignParticulate.to_excel(writer,index=False,sheet_name='foreignParticulate')
         
-    Year = [2022,2023]
-    Month = [1,2,3,4,5,6,7,8,9,10,11,12]
+    date_range = pd.date_range(start='2022-01',end='2023-02',freq='MS')
     Division = [21,22,51]
-    index = pd.MultiIndex.from_product([vendor_list, Year, Month,Division], names=['Vendor Name', 'Year', 'Month','Division'])
+    index = pd.MultiIndex.from_product([vendor_list, date_range,Division], names=['Vendor Name', 'Date','Division'])
     df_base = pd.DataFrame(index=index)
     df_base = df_base.reset_index()
-    
+    df_base['Year'] =  df_base['Date'].dt.year
+    df_base['Month'] = df_base['Date'].dt.month
+    df_base.pop('Date')
+    df_base.insert(3,'Division',df_base.pop('Division'))
+
     df = df_base.merge(df_inspection_foreignParticulate,how='left',on=['Vendor Name', 'Year', 'Month','Division']).merge(df_inspection,how='left',on=['Vendor Name', 'Year', 'Month','Division'])\
     .merge(df_complaints_foreignParticulate,how='left',on=['Vendor Name', 'Year', 'Month','Division']).merge(df_purchasing,how='left',on=['Vendor Name', 'Year', 'Month']).fillna(0)
-    df = df.loc[~((df['Year'] == 2023) & (df['Month'] >=3))]
+    # df = df.loc[~((df['Year'] == 2023) & (df['Month'] >=3))]
     query_zero = df['Rework #: Foreign Particulate'] + df['Inspection'] + df['Complaints #: Foreign Particulates'] + df['Purchasing'] == 0
     df.drop(df[query_zero].index,inplace=True)
     df.drop(columns='Purchasing',axis=1,inplace=True)
